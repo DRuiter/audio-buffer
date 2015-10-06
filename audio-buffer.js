@@ -1,14 +1,14 @@
-var	FFT				= require("./fft"),
-	TimedBuffer 	= require('./timed-buffer');
+var	FFT					= require("./fft"),
+		TimedBuffer = require('./timed-buffer');
 
 function AudioBuffer (timeMS, options){
 	if(typeof(options) !== 'object') options = {};
-	
+
 	var self = this;
 
 	this.sampleRate = options.sampleRate || 44100;
-	this.fftSize 	= options.fftSize || 1024;
-	this.binSize	= Math.floor(this.sampleRate/this.fftSize);
+	this.fftSize 		= options.fftSize || 1024;
+	this.binSize		= Math.floor(this.sampleRate/this.fftSize);
 
 	this.fft 		= new FFT(this.fftSize);
 	this.PCM 		= new TimedBuffer(timeMS, options);
@@ -36,7 +36,7 @@ function AudioBuffer (timeMS, options){
 
 				return sampleInfo;
 			});
-	}
+	};
 
 	this.condenseSample = function (FFTSample, factor){
 		var condensed 	= [
@@ -54,7 +54,7 @@ function AudioBuffer (timeMS, options){
 				} else {
 					return prev+cur;
 				}
-			})
+			});
 		}
 
 		if(hasHistory){
@@ -62,12 +62,12 @@ function AudioBuffer (timeMS, options){
 			FFTSample.forEach(function (item, index){
 				if(index === 0) {
 					condensed[iterator] = {
-						db 					: [],
-						mean 				: [],
-						meanDiff 			: [],
-						variance 			: [],
-						standardDeviation 	: []
-					}
+						db 								: [],
+						mean 							: [],
+						meanDiff 					: [],
+						variance 					: [],
+						standardDeviation : []
+					};
 				}
 
 				if(index !== 0 && index%factor === 0) {
@@ -93,7 +93,7 @@ function AudioBuffer (timeMS, options){
 				condensed[iterator].meanDiff.push(item.meanDiff);
 				condensed[iterator].variance.push(item.variance);
 				condensed[iterator].standardDeviation.push(item.standardDeviation);
-			})
+			});
 
 			return condensed.map(function (item, index, array){
 				var times = index+1;
@@ -101,7 +101,7 @@ function AudioBuffer (timeMS, options){
 				item.freq = [(self.binSize*factor*index), (self.binSize*factor*times)];
 
 				return item;
-			})
+			});
 
 		} else {
 
@@ -113,7 +113,7 @@ function AudioBuffer (timeMS, options){
 				}
 
 				condensed[iterator].push(item.db);
-			})
+			});
 
 			return condensed.map(function (item, index, array){
 				var times = index+1;
@@ -121,10 +121,10 @@ function AudioBuffer (timeMS, options){
 				return {
 					db 		: item,
 					freq	: [(self.binSize*factor*index), (self.binSize*factor*times)]
-				}
-			})
+				};
+			});
 		}
-	}
+	};
 
 	this.averageSample = function ( FFTArray ){
 		var average = [];
@@ -133,7 +133,7 @@ function AudioBuffer (timeMS, options){
 			array.forEach(function (item, index){
 				if(!average[index])
 					average[index] = item;
-				else 
+				else
 					average[index].db += item.db;
 			});
 		});
@@ -141,12 +141,12 @@ function AudioBuffer (timeMS, options){
 		return average.map(function (item){
 			item.db = item.db/FFTArray.length;
 			return item;
-		})
-	}
+		});
+	};
 
 	this.calculateHistory = function ( FFTSample, timeMS ){
 		if(!timeMS) timeMS = 500;
-		
+
 		var compare 			= this.FFT.getByTime(timeMS),
 			sortedByBin 		= [],
 			mean,
@@ -156,13 +156,13 @@ function AudioBuffer (timeMS, options){
 
 		FFTSample.forEach(function(){
 			sortedByBin.push([]);
-		})
+		});
 
 		compare.forEach(function (sample, index){
 			sample.forEach(function (item, innerIndex){
 				sortedByBin[innerIndex].push(item.db);
-			})
-		})
+			});
+		});
 
 		mean = sortedByBin.map(function (item, index){
 			return item.reduce(function (prev, cur, innerIndex, array){
@@ -177,7 +177,7 @@ function AudioBuffer (timeMS, options){
 			return item.map(function (innerItem, innerIndex){
 				return innerItem-mean[index];
 			});
-		})
+		});
 
 		variance = meanDiff.map(function (item, index){
 			return item.reduce(function (prev, cur, innerIndex, array){
@@ -185,12 +185,12 @@ function AudioBuffer (timeMS, options){
 					return (prev+Math.pow(cur, 2))/array.length;
 				else
 					return prev+Math.pow(cur, 2);
-			})
-		})
+			});
+		});
 
 		standardDeviation = variance.map(function (item, index){
 			return Math.round(Math.sqrt(item, 2));
-		})
+		});
 
 		return FFTSample.map(function (item, index){
 			item.mean 				= mean[index];
@@ -199,8 +199,8 @@ function AudioBuffer (timeMS, options){
 			item.standardDeviation 	= standardDeviation[index];
 
 			return item;
-		})
-	}
+		});
+	};
 
 	this.getLast		= function (options){
 		if(options == null) options = {};
@@ -210,7 +210,7 @@ function AudioBuffer (timeMS, options){
 		var sample = this.FFT.buffer[this.FFT.buffer.length-1];
 
 		return this.condenseSample(sample, options.condensationFactor);
-	}
+	};
 
 	this.getSample		= function (timeMS, options){
 		if(typeof(options) !== 'object') options = {};
@@ -226,7 +226,7 @@ function AudioBuffer (timeMS, options){
 			return this.condenseSample(sample, options.condensationFactor);
 		else
 			return sample;
-	}
+	};
 
 	this.toSample = function( FFTArray ){
 		var sample = [];
@@ -235,28 +235,28 @@ function AudioBuffer (timeMS, options){
 			FFTSample.forEach(function (item, i){
 				if(typeof(sample[i]) !== 'object')
 					sample[i] = item;
-				else 
+				else
 					sample[i].db = sample[i].db+item.db;
-			})
-		})
+			});
+		});
 
 		return sample.map(function (item){
 			item.db = Math.round(item.db/FFTArray.length);
 
 			return item;
-		})
-	}
+		});
+	};
 
 	this.getFrequencyRange = function (FFTSample, start, end){
 		return FFTSample.filter(function (item){
 			if(item.freq >= start && item.freq <= end) return item;
-		})
-	}
+		});
+	};
 
 	this.push = function ( PCMSample ) {
 		this.PCM.push(PCMSample);
-		this.FFT.push(this.getFrequencyData(PCMSample));	
-	}
+		this.FFT.push(this.getFrequencyData(PCMSample));
+	};
 
 	return this;
 }
